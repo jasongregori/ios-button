@@ -97,7 +97,7 @@
 }
 
 - (void)__save {
-    NSFileManager *fm = [NSFileManager defaultManager];
+    NSFileManager *fm = [[[NSFileManager alloc] init] autorelease];
     
     static NSString *saveFolder = nil;
     if (!saveFolder) {
@@ -114,6 +114,7 @@
         {
             [fm createDirectoryAtPath:saveFolder withIntermediateDirectories:NO attributes:nil error:NULL];
         }
+        [saveFolder retain];
     }
     
     // save image
