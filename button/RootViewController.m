@@ -9,6 +9,7 @@
 #import "RootViewController.h"
 
 #import <QuartzCore/QuartzCore.h>
+#import <pwd.h>
 
 @interface GradientButton : UIButton
 @end
@@ -21,6 +22,7 @@
 @interface RootViewController ()
 @property (nonatomic, retain) UIButton *button;
 @property (nonatomic, retain) UIView *container;
+- (void)__save;
 @end
 
 @implementation RootViewController
@@ -28,6 +30,7 @@
 
 - (void)__sharedInit {
     self.title = @"Make a Button";
+    self.navigationItem.rightBarButtonItem = [[[UIBarButtonItem alloc] initWithTitle:@"Save" style:UIBarButtonItemStyleBordered target:self action:@selector(__save)] autorelease];
     
     self.container = [[[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 480)] autorelease];
     self.container.backgroundColor = [UIColor colorWithWhite:0.867 alpha:1.000];
@@ -91,6 +94,54 @@
     self.container = nil;
     self.button = nil;
     [super dealloc];
+}
+
+- (void)__save {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    
+    static NSString *saveFolder = nil;
+    if (!saveFolder) {
+        // get desktop
+#if TARGET_IPHONE_SIMULATOR
+        NSString *logname = [NSString stringWithCString:getenv("LOGNAME") encoding:NSUTF8StringEncoding];
+        struct passwd *pw = getpwnam([logname UTF8String]);
+        NSString *home = pw ? [NSString stringWithCString:pw->pw_dir encoding:NSUTF8StringEncoding] : [@"/Users" stringByAppendingPathComponent:logname];
+        saveFolder = [NSString stringWithFormat:@"%@/Desktop", home];
+#else
+        saveFolder = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) lastObject];
+#endif
+        if (![fm fileExistsAtPath:saveFolder])
+        {
+            [fm createDirectoryAtPath:saveFolder withIntermediateDirectories:NO attributes:nil error:NULL];
+        }
+    }
+    
+    // save image
+    CGSize sizeIncludingShadow = self.button.bounds.size;
+    sizeIncludingShadow.height += fabs(self.button.layer.shadowOffset.height);
+    sizeIncludingShadow.width += fabs(self.button.layer.shadowOffset.width);
+    
+    UIGraphicsBeginImageContext(sizeIncludingShadow);
+    [self.button.layer renderInContext:UIGraphicsGetCurrentContext()];
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    NSData *data = UIImagePNGRepresentation(image);
+    
+    NSString *imagePathComponent = @"button.png";
+    int i = 0;
+    while ([fm fileExistsAtPath:[saveFolder stringByAppendingPathComponent:imagePathComponent]]) {
+        i++;
+        imagePathComponent = [NSString stringWithFormat:@"button %i.png", i];
+    }
+    
+    [fm createFileAtPath:[saveFolder stringByAppendingPathComponent:imagePathComponent]
+                contents:data
+              attributes:nil];
+    
+    // tell user it is finished
+    self.navigationItem.prompt = @"Saved to \"Desktop\"";
+    
+    [self.navigationItem performSelector:@selector(setPrompt:) withObject:nil afterDelay:2];
 }
 
 @end
