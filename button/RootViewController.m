@@ -11,11 +11,19 @@
 #import <QuartzCore/QuartzCore.h>
 #import <pwd.h>
 
-@interface GradientButton : UIButton
+@interface Button : UIButton
 @end
-@implementation GradientButton
+@implementation Button
 + (Class)layerClass {
     return [CAGradientLayer class];
+}
+- (CGSize)sizeThatFits:(CGSize)size {
+    size.height -= self.titleEdgeInsets.top + self.titleEdgeInsets.bottom;
+    size.width -= self.titleEdgeInsets.left + self.titleEdgeInsets.right;
+    size = [super sizeThatFits:size];
+    size.height += self.titleEdgeInsets.top + self.titleEdgeInsets.bottom;
+    size.width += self.titleEdgeInsets.left + self.titleEdgeInsets.right;
+    return size;
 }
 @end
 
@@ -35,12 +43,12 @@
     self.container = [[[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 480)] autorelease];
     self.container.backgroundColor = [UIColor colorWithWhite:0.867 alpha:1.000];
     
-    self.button = [GradientButton buttonWithType:UIButtonTypeCustom];
+    self.button = [Button buttonWithType:UIButtonTypeCustom];
     self.button.autoresizingMask = (UIViewAutoresizingFlexibleLeftMargin
                                     | UIViewAutoresizingFlexibleTopMargin
                                     | UIViewAutoresizingFlexibleRightMargin
                                     | UIViewAutoresizingFlexibleBottomMargin);
-    self.button.bounds = CGRectMake(0, 0, 19, 46);
+    self.button.bounds = CGRectMake(0, 0, 19, 33);
     [self.container addSubview:self.button];
     
     // border
@@ -54,13 +62,25 @@
                                                      (id)[[UIColor colorWithRed:0.902 green:0.922 blue:0.949 alpha:1.000] CGColor], nil];
     
     // corner radius
-    self.button.layer.cornerRadius = 6;
+    self.button.layer.cornerRadius = 5;
     
     // shadow
     self.button.layer.shadowRadius = 0;
     self.button.layer.shadowColor = [UIColor whiteColor].CGColor;
     self.button.layer.shadowOffset = CGSizeMake(0, 1);
     self.button.layer.shadowOpacity = 0.8;
+    
+    // text
+//    self.button.contentMode = UIViewContentModeLeft;
+//    self.button.titleEdgeInsets = UIEdgeInsetsMake(1, 4, 2, 4);
+//    self.button.titleLabel.font = [UIFont systemFontOfSize:24];
+////    self.button.titleLabel.shadowOffset = CGSizeMake(0, 1);
+//    [self.button setTitleColor:[UIColor colorWithRed:0.255 green:0.367 blue:0.500 alpha:1.000] forState:UIControlStateNormal];
+//    [self.button setTitleColor:[UIColor colorWithRed:0.399 green:0.468 blue:0.565 alpha:1.000] forState:UIControlStateNormal];
+//    [self.button setTitleColor:[UIColor colorWithRed:0.452 green:0.531 blue:0.642 alpha:1.000] forState:UIControlStateNormal];
+////    [self.button setTitleShadowColor:[UIColor whiteColor] forState:UIControlStateNormal];
+//    [self.button setTitle:@"Sample" forState:UIControlStateNormal];
+//    [self.button sizeToFit];
 }
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
@@ -118,11 +138,13 @@
     }
     
     // save image
+    
     CGSize sizeIncludingShadow = self.button.bounds.size;
     sizeIncludingShadow.height += fabs(self.button.layer.shadowOffset.height);
     sizeIncludingShadow.width += fabs(self.button.layer.shadowOffset.width);
     
-    UIGraphicsBeginImageContext(sizeIncludingShadow);
+    // @1x
+    UIGraphicsBeginImageContextWithOptions(sizeIncludingShadow, NO, 1.0);
     [self.button.layer renderInContext:UIGraphicsGetCurrentContext()];
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -133,6 +155,24 @@
     while ([fm fileExistsAtPath:[saveFolder stringByAppendingPathComponent:imagePathComponent]]) {
         i++;
         imagePathComponent = [NSString stringWithFormat:@"button %i.png", i];
+    }
+    
+    [fm createFileAtPath:[saveFolder stringByAppendingPathComponent:imagePathComponent]
+                contents:data
+              attributes:nil];
+    
+    // @2x
+    UIGraphicsBeginImageContextWithOptions(sizeIncludingShadow, NO, 2.0);
+    [self.button.layer renderInContext:UIGraphicsGetCurrentContext()];
+    image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    data = UIImagePNGRepresentation(image);
+    
+    imagePathComponent = @"button@2x.png";
+    i = 0;
+    while ([fm fileExistsAtPath:[saveFolder stringByAppendingPathComponent:imagePathComponent]]) {
+        i++;
+        imagePathComponent = [NSString stringWithFormat:@"button %i@2x.png", i];
     }
     
     [fm createFileAtPath:[saveFolder stringByAppendingPathComponent:imagePathComponent]
